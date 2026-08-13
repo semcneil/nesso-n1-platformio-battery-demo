@@ -25,6 +25,7 @@ const uint16_t COLOR_BLACK = 0x0000;
 const uint16_t COLOR_GREEN = 0x1e85;
 const uint16_t COLOR_ORANGE = 0xed03;
 const uint16_t COLOR_RED = 0xe841;
+const uint16_t COLOR_BLUE = 0x001F;
 const int ANIMATION_DELAY = 30;
 const int COLS = 20;
 const int ROWS = 1;
@@ -58,7 +59,8 @@ void setup() {
   display.setTextSize(5);
   display.drawString("Nesso N1", 6, 11);
 
-  statusSprite.createSprite(240, 81);
+  // statusSprite.createSprite(240, 81);
+  statusSprite.createSprite(240, 135);
   delay(1000);
   // pinMode(LED_BUILTIN, OUTPUT);  // All these are defined in Nesso header, do not redefine
   // pinMode(KEY1, INPUT);
@@ -66,6 +68,20 @@ void setup() {
 
   Serial.println("Starting...");
   lastLEDflip = millis();
+
+  Serial.println("Initializing IMU...");
+  if (!IMU.begin()) {
+    Serial.println("Failed to initialize IMU!");
+    while (1);
+  }
+
+  Serial.print("Accel Rate: ");
+  Serial.print(IMU.accelerationSampleRate());
+  Serial.println(" Hz");
+
+  Serial.print("Gyro Rate: ");
+  Serial.print(IMU.gyroscopeSampleRate());
+  Serial.println(" Hz");
 }
 
 void loop() {
@@ -73,9 +89,36 @@ void loop() {
   static uint8_t lastKey1 = false;
   static uint8_t lastKey2 = false;
   static uint8_t lastPwrIn = false;
+  float ax, ay, az;
+  float gx, gy, gz;
+
   uint8_t curKey1 = digitalRead(KEY1);
   uint8_t curKey2 = digitalRead(KEY2);
   uint8_t curPwrIn = digitalRead(VIN_DETECT);
+
+  if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
+    IMU.readAcceleration(ax, ay, az);
+    IMU.readGyroscope(gx, gy, gz);
+
+    Serial.print("aX:");
+    Serial.print(ax, 2);
+    Serial.print(" aY:");
+    Serial.print(ay, 2);
+    Serial.print(" aZ:");
+    Serial.print(az, 2);
+    Serial.print("\t gX:");
+    Serial.print(gx, 2);
+    Serial.print(" gY:");
+    Serial.print(gy, 2);
+    Serial.print(" gZ:");
+    Serial.println(gz, 2);
+    if(ay > 0.0) {
+      display.setRotation(3);
+    } else {
+      display.setRotation(1);
+    }
+}
+
   if(curKey1 != lastKey1 && !curKey1) {
     Serial.println("KEY1 pressed");
   }
@@ -116,12 +159,22 @@ void loop() {
 
 void renderstatusSprite() {
   int offsetY = 18;
+  int fullOffsetY = 54;
   statusSprite.fillSprite(TFT_WHITE);
-  statusSprite.setColor(COLOR_ORANGE);
-  if (progressExpanding) {
-    statusSprite.fillRect(progressEdge, 0, 240, 8);
+  statusSprite.setTextColor(COLOR_TEAL);
+  statusSprite.setTextSize(5);
+  statusSprite.drawString("Nesso N1", 6, 11);
+  if(!digitalRead(KEY1)) {
+    statusSprite.setColor(COLOR_BLUE);
+  } else if(!digitalRead(KEY2)) {
+    statusSprite.setColor(COLOR_GREEN);
   } else {
-    statusSprite.fillRect(0, 0, progressEdge, 8);
+    statusSprite.setColor(COLOR_ORANGE);
+  }
+  if (progressExpanding) {
+    statusSprite.fillRect(progressEdge, 0 + fullOffsetY, 240, 8);
+  } else {
+    statusSprite.fillRect(0, 0 + fullOffsetY, progressEdge, 8);
   }
 
   progressEdge -= 1;
@@ -131,7 +184,7 @@ void renderstatusSprite() {
   }
   statusSprite.setTextSize(3);
   statusSprite.setTextColor(COLOR_BLACK);
-  statusSprite.drawString("Battery:", 6, offsetY);
+  statusSprite.drawString("Battery:", 6, offsetY + fullOffsetY);
   uint16_t textColor = 0x0000;
   if (batteryVoltage > 3.7) {
     textColor = COLOR_GREEN;
@@ -143,12 +196,13 @@ void renderstatusSprite() {
   char batteryString[6];
   sprintf(batteryString, "%4.2f", batteryVoltage);
   statusSprite.setTextColor(textColor);
-  statusSprite.drawString(batteryString, 165, offsetY);
+  statusSprite.drawString(batteryString, 165, offsetY + fullOffsetY);
   statusSprite.setTextColor(COLOR_BLACK);
   statusSprite.setTextSize(2);
 
   statusSprite.setTextColor(COLOR_TEAL);
-  statusSprite.drawString(uptimeString, 6, offsetY + 38);
-  statusSprite.pushSprite(0, 54);
+  statusSprite.drawString(uptimeString, 6, offsetY + 38 + fullOffsetY);
+  // statusSprite.pushSprite(0, 54);
+  statusSprite.pushSprite(0, 0);
   //
 }
