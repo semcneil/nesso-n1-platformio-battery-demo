@@ -72,15 +72,25 @@ void loop() {
   unsigned long msNow = millis();
   static uint8_t lastKey1 = false;
   static uint8_t lastKey2 = false;
+  static uint8_t lastPwrIn = false;
   uint8_t curKey1 = digitalRead(KEY1);
   uint8_t curKey2 = digitalRead(KEY2);
+  uint8_t curPwrIn = digitalRead(VIN_DETECT);
   if(curKey1 != lastKey1 && !curKey1) {
     Serial.println("KEY1 pressed");
   }
   if(curKey2 != lastKey2 && !curKey2) {
     Serial.println("KEY2 pressed");
   }
- 
+  if(curPwrIn != lastPwrIn && !curPwrIn) {
+    delay(5000);
+    Serial.println("Power in is LOW");
+  }
+  if(curPwrIn != lastPwrIn && curPwrIn) {
+    delay(5000);
+    Serial.println("Power in is HIGH (plugged in)");
+  }
+   
   float chargeLevel = battery.getChargeLevel();
   batteryVoltage = battery.getVoltage();
 
@@ -101,6 +111,7 @@ void loop() {
   renderstatusSprite();
   lastKey1 = curKey1;
   lastKey2 = curKey2;
+  lastPwrIn = curPwrIn;
 }
 
 void renderstatusSprite() {
