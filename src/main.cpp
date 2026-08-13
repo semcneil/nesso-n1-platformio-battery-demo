@@ -50,8 +50,6 @@ void setup() {
   battery.begin();
   battery.enableCharge();
 
-  pinMode(LED_BUILTIN, OUTPUT);
-
   display.setRotation(1);
   display.setEpdMode(epd_mode_t::epd_fastest);
 
@@ -61,12 +59,28 @@ void setup() {
   display.drawString("Nesso N1", 6, 11);
 
   statusSprite.createSprite(240, 81);
+  delay(1000);
+  // pinMode(LED_BUILTIN, OUTPUT);  // All these are defined in Nesso header, do not redefine
+  // pinMode(KEY1, INPUT);
+  // pinMode(KEY2, INPUT);
+
+  Serial.println("Starting...");
   lastLEDflip = millis();
 }
 
 void loop() {
   unsigned long msNow = millis();
-
+  static uint8_t lastKey1 = false;
+  static uint8_t lastKey2 = false;
+  uint8_t curKey1 = digitalRead(KEY1);
+  uint8_t curKey2 = digitalRead(KEY2);
+  if(curKey1 != lastKey1 && !curKey1) {
+    Serial.println("KEY1 pressed");
+  }
+  if(curKey2 != lastKey2 && !curKey2) {
+    Serial.println("KEY2 pressed");
+  }
+ 
   float chargeLevel = battery.getChargeLevel();
   batteryVoltage = battery.getVoltage();
 
@@ -85,6 +99,8 @@ void loop() {
     Serial.println(uptimeString);
   }
   renderstatusSprite();
+  lastKey1 = curKey1;
+  lastKey2 = curKey2;
 }
 
 void renderstatusSprite() {
